@@ -14,7 +14,7 @@ net.add_layer(10, act='sigmoid')
 
 print(net)
 
-net.train(train_images, train_labels, epochs=10)
+net.train(train_images, train_labels, epochs=5)
 print(net)
 
 acc = net.evaluate(test_images, test_labels) # eval on test set

@@ -83,11 +83,13 @@ class Network:
     def add_layer(self, n_neurons, act='sigmoid'):
         # add to parallel weight list
         if (len(self.layers) != 0): # not first layer added
-            self.weights.append(np.random.rand(self.layers[-1].shape[0], n_neurons)/np.float64(n_neurons))
+            self.weights.append(np.subtract(np.random.rand(self.layers[-1].shape[0], n_neurons)*0.2, \
+                np.full((self.layers[-1].shape[0], n_neurons), 0.1, dtype=DTYPE)))
         else: # the first layer added
-            self.weights.append(np.random.rand(self.input.shape[0], n_neurons)/np.float64(n_neurons))
+            self.weights.append(np.subtract(np.random.rand(self.input.shape[0], n_neurons)*0.2, \
+                np.full((self.input.shape[0], n_neurons), 0.1, dtype=DTYPE)))
         # add to parallel bias list
-        self.biases.append(np.random.rand(n_neurons))
+        self.biases.append(np.subtract(np.random.rand(n_neurons)*0.2, np.full((n_neurons,), 0.1, dtype=DTYPE)))
         # add layer state
         self.layers.append(np.zeros((n_neurons,), dtype=DTYPE))
         # keep track of the activation function for the layer
