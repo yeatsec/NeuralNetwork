@@ -13,7 +13,7 @@ np.random.seed(789) # randomness always the same
 
 from network import Network
 print('creating network')
-net = Network(28*28, lrn_rate=0.05)
+net = Network(28*28, lrn_rate=0.01)
 net.add_layer(10, act='relu')
 
 print(net)

@@ -1,6 +1,7 @@
 # Eric Yeats
 # February 2, 2020
-# Simple Multi-Layer Perceptron Interface with Backpropagation Algorithm
+# Complex Neural Network Implementation
+# Simple Multi-Layer Perceptron Interface with Complex Backend + Backpropagation Algorithm
 # Useful for testing modifications to neuron models and/or the backpropagation algorithm
 # Thank you Jason Brownlee for the guide "How to Code a Neural Network with Backpropagation In Python (from scratch)"
 # It's excellent, available here https://machinelearningmastery.com/implement-backpropagation-algorithm-scratch-python/
