@@ -24,8 +24,8 @@ class Network:
         self.layers = list()
         self.weights = list()
         self.biases = list()
-        self.act_funcs = list()
-        self.act_deriv_funcs = list()
+        # self.act_funcs = list()
+        # self.act_deriv_funcs = list()
         self.errors = list()
         self.errors_batch = list()
         self.readout = None
@@ -140,8 +140,8 @@ class Network:
         # add layer state
         self.layers.append(np.zeros((n_neurons, 2), dtype=DTYPE))
         # keep track of the activation function for the layer
-        self.act_funcs.append(Network.relu_comp_vect)
-        self.act_deriv_funcs.append(Network.relu_comp_deriv_vect)
+        # self.act_funcs.append(Network.relu_comp_vect)
+        # self.act_deriv_funcs.append(Network.relu_comp_deriv_vect)
         # add error state
         self.errors.append(np.zeros((n_neurons, 2), dtype=DTYPE))
         self.errors_batch.append(np.zeros((n_neurons, 2), dtype=DTYPE))
@@ -207,7 +207,7 @@ class Network:
                 lay_inp = self.layers[lay_ind-1]
             lay = Network.matmul_comp(lay_inp, self.weights[lay_ind]) # vector multiplication for each neuron (so is matrix for layer level)
             lay = np.add(lay, self.biases[lay_ind], dtype=DTYPE) # add bias
-            self.layers[lay_ind] = self.act_funcs[lay_ind](lay) # calculate activation and writeback
+            self.layers[lay_ind] = Network.relu_comp_vect(lay)#self.act_funcs[lay_ind](lay) # calculate activation and writeback
         # output values must be propagated through readout
         self.readout = Network.relu_comp_vect(Network.mult_comp_vect(self.layers[-1], self.readout_wgt))
 
@@ -236,7 +236,7 @@ class Network:
                 self.errors[lay_ind] = Network.mult_comp_vect(self.errors[-1], self.readout_wgt, complex_conj=True)    # propagate error back from readout
             else: # hidden layer
                 self.errors[lay_ind] = Network.matmul_comp(self.errors[lay_ind+1], Network.transpose_comp_2d(self.weights[lay_ind+1])) # errors propagate back up weights
-            self.errors[lay_ind] = np.multiply(self.errors[lay_ind], self.act_deriv_funcs[lay_ind](self.layers[lay_ind]), dtype=DTYPE)
+            self.errors[lay_ind] = np.multiply(self.errors[lay_ind], Network.relu_comp_deriv_vect(self.layers[lay_ind]), dtype=DTYPE) # self.act_deriv_funcs
 
     @staticmethod
     def outer_comp(vec1, vec2):
@@ -395,8 +395,8 @@ class Network:
         savedict['layers'] = [lay.tolist() for lay in self.layers]
         savedict['weights'] = [wgt.tolist() for wgt in self.weights]
         savedict['biases'] = [b.tolist() for b in self.biases]
-        savedict['act_funcs'] = [getsource(f) for f in self.act_funcs]
-        savedict['act_deriv_funcs'] = [getsource(f) for f in self.act_deriv_funcs]
+        # savedict['act_funcs'] = [getsource(f) for f in self.act_funcs]
+        # savedict['act_deriv_funcs'] = [getsource(f) for f in self.act_deriv_funcs]
         savedict['errors'] = [err.tolist() for err in self.errors]
         savedict['errors_batch'] = [err.tolist() for err in self.errors_batch]
         if (self.readout is not None):
@@ -414,12 +414,14 @@ class Network:
             savedict = json.load(json_file)
             self.n_input = savedict['n_inputs']
             self.input = np.array(savedict['input'], dtype=DTYPE)
-            self.expected = np.array(savedict['expected'], dtype=DTYPE)
+            self.expected = None
+            if 'expected' in savedict:
+                self.expected = np.array(savedict['expected'], dtype=DTYPE)
             self.layers = [np.array(lay, dtype=DTYPE) for lay in savedict['layers']]
             self.weights = [np.array(wgt, dtype=DTYPE) for wgt in savedict['weights']]
             self.biases = [np.array(b, dtype=DTYPE) for b in savedict['biases']]
-            self.act_funcs = savedict['act_funcs']
-            self.act_deriv_funcs = savedict['act_deriv_funcs']
+            # self.act_funcs = savedict['act_funcs']
+            # self.act_deriv_funcs = savedict['act_deriv_funcs']
             self.errors = [np.array(err, dtype=DTYPE) for err in savedict['errors']]
             self.errors_batch = [np.array(err, dtype=DTYPE) for err in savedict['errors_batch']]
             self.readout = np.array(savedict['readout'], dtype=DTYPE)
