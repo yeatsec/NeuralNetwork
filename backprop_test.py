@@ -6,7 +6,7 @@ train_images = np.load('mnist_train_images.npy', allow_pickle=True)
 test_labels = np.load('mnist_test_labels.npy', allow_pickle=True)
 test_images = np.load('mnist_test_images.npy', allow_pickle=True)
 
-train_subset_ind = 10000
+train_subset_ind = 30000
 test_subset_ind = 1000
 
 np.random.seed(123) # randomness always the same
