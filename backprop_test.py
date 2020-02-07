@@ -14,11 +14,11 @@ np.random.seed(123) # randomness always the same
 
 from network import Network
 print('creating network')
-net = Network(28*28, lrn_rate=0.01)
-net.add_layer(10, act='relu')
-net.set_readout()
+net = Network(28*28, lrn_rate=0.001)
+net.load(filename)
+net.lrn_rate = 0.005
 
-net.report(2)
+net.report(8)
 
 net.train(train_images[...,:train_subset_ind], train_labels[...,:train_subset_ind], epochs=1, batch_size=1, train_acc=100, checkpoint=True)
 

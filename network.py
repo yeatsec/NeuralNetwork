@@ -94,7 +94,7 @@ class Network:
         if (nrn_comp_preact.shape != (2,)):
             raise ValueError('inbound shape of relu comp must be 2-vec (column) but was {}'.format(nrn_comp_preact.shape))
         mag = ((nrn_comp_preact[0]**2) + (nrn_comp_preact[1]**2))**0.5
-        if (mag <= 1.0 and mag != 0.0):
+        if (mag <= 1.0):
             return nrn_comp_preact
         else:
             return nrn_comp_preact/mag
@@ -248,7 +248,7 @@ class Network:
 
     def update_weights(self):
         # update readout weights
-        self.readout_wgt += self.lrn_rate * Network.mult_comp_vect(self.layers[-1], self.errors_batch[-1])
+        self.readout_wgt += self.lrn_rate * Network.mult_comp_vect(self.layers[-1], self.errors[-1])
         # enforce unit magnitude
         self.readout_wgt = Network.make_unit_vect(self.readout_wgt)
         # update the other weights
@@ -258,8 +258,8 @@ class Network:
                 lay_inp = self.input 
             else:
                 lay_inp = self.layers[lay_ind - 1]
-            self.weights[lay_ind] += self.lrn_rate * Network.outer_comp(lay_inp, self.errors_batch[lay_ind])
-            self.biases[lay_ind] += self.lrn_rate * self.errors_batch[lay_ind]
+            self.weights[lay_ind] += self.lrn_rate * Network.outer_comp(lay_inp, self.errors[lay_ind])
+            self.biases[lay_ind] += self.lrn_rate * self.errors[lay_ind]
 
     @staticmethod
     def comp_mag(comp_num):
@@ -309,7 +309,7 @@ class Network:
         for epoch in range(epochs):
             cumulative_error = 0.0
             for b_index in range(num_batches):
-                self.reset_batch_error()
+                #self.reset_batch_error() removed batch functionality for now (to speed up)
                 if verbose and b_index % 1000 == 0:
                     print('Epoch {}: Batch {} of {}'.format(epoch+1, b_index+1, num_batches))
                 for inter_batch_ind in range(batch_size):
@@ -321,7 +321,7 @@ class Network:
                     diff = Network.comp_mag_vect(diff)
                     cumulative_error += np.dot(diff, diff) # sum of squared error
                     self.backward_propagate()
-                    self.transfer_batch_error(batch_size)
+                    #self.transfer_batch_error(batch_size)
                 self.update_weights()
             print('Epoch: {}\nError: {}'.format(epoch+1, cumulative_error))
             if (train_acc > 0):
