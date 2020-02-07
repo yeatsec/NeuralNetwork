@@ -298,7 +298,7 @@ class Network:
         for i in range(len(self.errors_batch)):
             self.errors_batch[i].fill(0.0)
 
-    def train(self, examples, truth, epochs=1, batch_size=20, verbose=True, train_acc=0, report=False):
+    def train(self, examples, truth, epochs=1, batch_size=20, verbose=True, train_acc=0, report=False, checkpoint=False, filename='autosave'):
         """
         Train the network for a fixed number of epochs on a set of inputs and "true" labels
         @param inputs: (--input data dim--, n_examples) numpy array of preprocessed input data
@@ -310,7 +310,7 @@ class Network:
             cumulative_error = 0.0
             for b_index in range(num_batches):
                 self.reset_batch_error()
-                if verbose and b_index % 100 == 0:
+                if verbose and b_index % 1000 == 0:
                     print('Epoch {}: Batch {} of {}'.format(epoch+1, b_index+1, num_batches))
                 for inter_batch_ind in range(batch_size):
                     ex_ind = inter_batch_ind + (b_index * batch_size) # location of image in full array
@@ -326,6 +326,8 @@ class Network:
             print('Epoch: {}\nError: {}'.format(epoch+1, cumulative_error))
             if (train_acc > 0):
                 print('Training Accuracy: {}%'.format(self.evaluate(examples[...,:train_acc], truth[...,:train_acc])*100.0))
+            if (checkpoint):
+                self.save(filename)
             if (report):
                 self.report()
 
