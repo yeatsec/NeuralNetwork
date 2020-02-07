@@ -28,8 +28,8 @@ class Network:
         # self.act_deriv_funcs = list()
         self.errors = list()
         self.errors_batch = list()
-        self.readout = None
-        self.readout_wgt = None
+        #self.readout = None
+        #self.readout_wgt = None
         self.lrn_rate = lrn_rate
 
     def set_input(self, input_data):
@@ -44,7 +44,7 @@ class Network:
             self.expected[i][0] = expected_out_data[i]
 
     def get_output(self):
-        return self.readout
+        return self.layers[-1] # used to be readout
 
     def get_output_scalar(self):
         return Network.comp_mag_vect(Network.relu_comp_vect(self.get_output()))
@@ -209,7 +209,8 @@ class Network:
             lay = np.add(lay, self.biases[lay_ind], dtype=DTYPE) # add bias
             self.layers[lay_ind] = Network.relu_comp_vect(lay)#self.act_funcs[lay_ind](lay) # calculate activation and writeback
         # output values must be propagated through readout
-        self.readout = Network.relu_comp_vect(Network.mult_comp_vect(self.layers[-1], self.readout_wgt))
+        # self.readout = Network.relu_comp_vect(Network.mult_comp_vect(self.layers[-1], self.readout_wgt))
+        # Nope !
 
     @staticmethod
     def transpose_comp_2d(in_array, complex_conj=True):
@@ -228,12 +229,12 @@ class Network:
 
     def backward_propagate(self):
         # readout error
-        self.errors[-1] = np.subtract(self.expected, self.get_output(), dtype=DTYPE)
+        # self.errors[-1] = np.subtract(self.expected, self.get_output(), dtype=DTYPE)
         # iterate backwards through the layers and update the error value
         # error = (expected - output) * derivative(nrn_act)
         for lay_ind in reversed(range(len(self.layers))):
             if (lay_ind == len(self.layers)-1): # is last hidden layer
-                self.errors[lay_ind] = Network.mult_comp_vect(self.errors[-1], self.readout_wgt, complex_conj=True)    # propagate error back from readout
+                self.errors[lay_ind] = np.subtract(self.expected, self.get_output(), dtype=DTYPE) # Network.mult_comp_vect(self.errors[-1], self.readout_wgt, complex_conj=True)    # propagate error back from readout
             else: # hidden layer
                 self.errors[lay_ind] = Network.matmul_comp(self.errors[lay_ind+1], Network.transpose_comp_2d(self.weights[lay_ind+1])) # errors propagate back up weights
             self.errors[lay_ind] = np.multiply(self.errors[lay_ind], Network.relu_comp_deriv_vect(self.layers[lay_ind]), dtype=DTYPE) # self.act_deriv_funcs
@@ -248,9 +249,9 @@ class Network:
 
     def update_weights(self):
         # update readout weights
-        self.readout_wgt += self.lrn_rate * Network.mult_comp_vect(self.layers[-1], self.errors[-1])
+        # self.readout_wgt += self.lrn_rate * Network.mult_comp_vect(self.layers[-1], self.errors[-1])
         # enforce unit magnitude
-        self.readout_wgt = Network.make_unit_vect(self.readout_wgt)
+        # self.readout_wgt = Network.make_unit_vect(self.readout_wgt)
         # update the other weights
         for lay_ind, lay in enumerate(self.layers):
             lay_inp = None
@@ -312,6 +313,8 @@ class Network:
                 #self.reset_batch_error() removed batch functionality for now (to speed up)
                 if verbose and b_index % 1000 == 0:
                     print('Epoch {}: Batch {} of {}'.format(epoch+1, b_index+1, num_batches))
+                    if (train_acc > 0):
+                        print('Training Accuracy: {}%'.format(self.evaluate(examples[...,-train_acc:], truth[...,-train_acc:])*100.0))
                 for inter_batch_ind in range(batch_size):
                     ex_ind = inter_batch_ind + (b_index * batch_size) # location of image in full array
                     self.set_input(examples[..., ex_ind])
@@ -324,8 +327,6 @@ class Network:
                     #self.transfer_batch_error(batch_size)
                 self.update_weights()
             print('Epoch: {}\nError: {}'.format(epoch+1, cumulative_error))
-            if (train_acc > 0):
-                print('Training Accuracy: {}%'.format(self.evaluate(examples[...,:train_acc], truth[...,:train_acc])*100.0))
             if (checkpoint):
                 self.save(filename)
             if (report):
@@ -362,16 +363,16 @@ class Network:
         nrn_errors_str = "---Errors---\n"
         weights_str = "---Weights---\n"
         biases_str = "---Biases---\n"
-        readout_wgt_str = "---Readout Weights---\n"
+        #readout_wgt_str = "---Readout Weights---\n"
         nrn_acts_str += mkstr_line(self.input, 'in')
-        readout_wgt_str += mkstr_line(self.readout_wgt, 'ROW')
+        #readout_wgt_str += mkstr_line(self.readout_wgt, 'ROW')
         for lay_ind, lay in enumerate(self.layers):
             nrn_acts_str += mkstr_line(lay, lay_ind)
             nrn_errors_str += mkstr_line(self.errors[lay_ind], lay_ind)
             weights_str += mkstr_line(self.weights[lay_ind], lay_ind)
             biases_str += mkstr_line(self.biases[lay_ind], lay_ind)
         nrn_acts_str += mkstr_line(self.get_output_scalar(), 'RO')
-        return outstr + nrn_acts_str + nrn_errors_str + weights_str + readout_wgt_str + biases_str
+        return outstr + nrn_acts_str + nrn_errors_str + weights_str + biases_str
 
     def report(self, classnum=1):
         import matplotlib.pyplot as plt
@@ -401,9 +402,9 @@ class Network:
         # savedict['act_deriv_funcs'] = [getsource(f) for f in self.act_deriv_funcs]
         savedict['errors'] = [err.tolist() for err in self.errors]
         savedict['errors_batch'] = [err.tolist() for err in self.errors_batch]
-        if (self.readout is not None):
-            savedict['readout'] = self.readout.tolist()
-            savedict['readout_wgt'] = self.readout_wgt.tolist()
+        # if (self.readout is not None):
+        #     savedict['readout'] = self.readout.tolist()
+        #     savedict['readout_wgt'] = self.readout_wgt.tolist()
         savedict['lrn_rate'] = self.lrn_rate
         with open('{}.txt'.format(path+filename), 'w') as outfile:
             json.dump(savedict, outfile)
@@ -426,7 +427,7 @@ class Network:
             # self.act_deriv_funcs = savedict['act_deriv_funcs']
             self.errors = [np.array(err, dtype=DTYPE) for err in savedict['errors']]
             self.errors_batch = [np.array(err, dtype=DTYPE) for err in savedict['errors_batch']]
-            self.readout = np.array(savedict['readout'], dtype=DTYPE)
-            self.readout_wgt = np.array(savedict['readout_wgt'], dtype=DTYPE)
+            # self.readout = np.array(savedict['readout'], dtype=DTYPE)
+            # self.readout_wgt = np.array(savedict['readout_wgt'], dtype=DTYPE)
             self.lrn_rate = savedict['lrn_rate']
         print("Load Finished!")

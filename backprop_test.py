@@ -8,21 +8,23 @@ test_images = np.load('mnist_test_images.npy', allow_pickle=True)
 
 train_subset_ind = 50000
 test_subset_ind = 10000
-filename = 'test1'
+filename = 'test2'
 
 np.random.seed(123) # randomness always the same
 
 from network import Network
 print('creating network')
-net = Network(28*28, lrn_rate=0.001)
-net.load(filename)
-net.lrn_rate = 0.005
+net = Network(28*28, lrn_rate=0.01)
+net.add_layer(10, act='relu')
+net.load('autosave') # later
+net.lrn_rate = 0.00005
 
-net.report(8)
+for i in range(10):
+    net.report(i)
 
-net.train(train_images[...,:train_subset_ind], train_labels[...,:train_subset_ind], epochs=1, batch_size=1, train_acc=100, checkpoint=True)
+# net.train(train_images[...,:train_subset_ind], train_labels[...,:train_subset_ind], epochs=5, batch_size=1, train_acc=100, checkpoint=True)
 
-acc = net.evaluate(test_images[...,:test_subset_ind], test_labels[...,:test_subset_ind]) # eval on test set
-print("acc: {}%".format(100*acc))
+# acc = net.evaluate(test_images[...,:test_subset_ind], test_labels[...,:test_subset_ind]) # eval on test set
+# print("acc: {}%".format(100*acc))
 
-net.save(filename)
+# net.save(filename)
