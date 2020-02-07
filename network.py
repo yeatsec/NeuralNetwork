@@ -39,15 +39,13 @@ class Network:
             self.input[i] = np.array([input_data[i], 0.0] ,dtype=DTYPE)
 
     def set_expected(self, expected_out_data):
-        self.expected = np.zeros((len(expected_out_data), 2), dtype=DTYPE)
-        for i in range(len(expected_out_data)):
-            self.expected[i][0] = expected_out_data[i]
+        self.expected = expected_out_data
 
     def get_output(self):
         return self.layers[-1] # used to be readout
 
     def get_output_scalar(self):
-        return Network.comp_mag_vect(Network.relu_comp_vect(self.get_output()))
+        return Network.comp_mag_vect(self.get_output())
 
     @staticmethod
     def relu(nrn_preact): # activation calculation for single neuron
@@ -124,6 +122,20 @@ class Network:
         for nrn_ind, nrn_preact in enumerate(in_arr):
             out_arr[nrn_ind] = Network.relu_comp_deriv(nrn_preact)
         return out_arr
+
+    @staticmethod
+    def relu_mag_comp_vect(in_arr):
+        in_arr = Network.relu_comp_vect(in_arr)
+        return Network.comp_mag_vect(in_arr)
+
+    @staticmethod
+    def relu_mag_comp_deriv_vect(in_arr):
+        comp_mags = Network.comp_mag_vect(in_arr)
+        out_arr = np.empty_like(in_arr, dtype=DTYPE)
+        for i, comp_num in enumerate(in_arr):
+            in_arr[i][0] = np.abs(comp_num[0])/comp_mags[i]
+            in_arr[i][1] = np.abs(comp_num[1])/comp_mags[i]
+        return np.multiply(out_arr, Network.relu_comp_deriv_vect(in_arr))
 
     def add_layer(self, n_neurons, act='sigmoid'):
         # add to parallel weight list
@@ -227,6 +239,12 @@ class Network:
                     out_arr[col][row][1] *= -1.0 # negate imaginary part (there are probably cooler ways to do this)
         return out_arr
 
+    @staticmethod
+    def scale_comp_num_vect(scalar_vec, comp_num_vec):
+        for i, comp_num in enumerate(comp_num_vec):
+            comp_num_vec[i] = scalar_vec[i]*comp_num
+        return comp_num_vec
+
     def backward_propagate(self):
         # readout error
         # self.errors[-1] = np.subtract(self.expected, self.get_output(), dtype=DTYPE)
@@ -234,7 +252,8 @@ class Network:
         # error = (expected - output) * derivative(nrn_act)
         for lay_ind in reversed(range(len(self.layers))):
             if (lay_ind == len(self.layers)-1): # is last hidden layer
-                self.errors[lay_ind] = np.subtract(self.expected, self.get_output(), dtype=DTYPE) # Network.mult_comp_vect(self.errors[-1], self.readout_wgt, complex_conj=True)    # propagate error back from readout
+                diff = np.subtract(self.expected, self.get_output_scalar(), dtype=DTYPE) # Network.mult_comp_vect(self.errors[-1], self.readout_wgt, complex_conj=True)    # propagate error back from readout
+                self.errors[lay_ind] =  Network.scale_comp_num_vect(diff, Network.relu_mag_comp_deriv_vect(self.layers[lay_ind]))
             else: # hidden layer
                 self.errors[lay_ind] = Network.matmul_comp(self.errors[lay_ind+1], Network.transpose_comp_2d(self.weights[lay_ind+1])) # errors propagate back up weights
             self.errors[lay_ind] = np.multiply(self.errors[lay_ind], Network.relu_comp_deriv_vect(self.layers[lay_ind]), dtype=DTYPE) # self.act_deriv_funcs
@@ -320,9 +339,8 @@ class Network:
                     self.set_input(examples[..., ex_ind])
                     self.set_expected(truth[..., ex_ind])
                     self.forward_propagate()
-                    diff = np.subtract(self.expected, self.get_output(), dtype=DTYPE) # difference between exp and output
-                    diff = Network.comp_mag_vect(diff)
-                    cumulative_error += np.dot(diff, diff) # sum of squared error
+                    diff = np.subtract(self.expected, self.get_output_scalar(), dtype=DTYPE) # difference between exp and output
+                    cumulative_error += 0.5 * np.dot(diff, diff) # sum of squared error
                     self.backward_propagate()
                     #self.transfer_batch_error(batch_size)
                 self.update_weights()
