@@ -10,11 +10,11 @@ train_subset_ind = 50000
 test_subset_ind = 10000
 filename = 'test4'
 
-np.random.seed(123) # randomness always the same
+np.random.seed(789) # randomness always the same
 
 from network import Network
 print('creating network')
-net = Network(28*28, lrn_rate=0.005)
+net = Network(28*28, lrn_rate=0.05)
 net.add_layer(10, act='relu')
 #net.load(filename) # later
 
