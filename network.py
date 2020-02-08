@@ -133,8 +133,8 @@ class Network:
         comp_mags = Network.comp_mag_vect(in_arr)
         out_arr = np.empty_like(in_arr, dtype=DTYPE)
         for i, comp_num in enumerate(in_arr):
-            in_arr[i][0] = np.abs(comp_num[0])/comp_mags[i]
-            in_arr[i][1] = np.abs(comp_num[1])/comp_mags[i]
+            out_arr[i][0] = np.abs(comp_num[0])/comp_mags[i]
+            out_arr[i][1] = np.abs(comp_num[1])/comp_mags[i]
         return np.multiply(out_arr, Network.relu_comp_deriv_vect(in_arr))
 
     def add_layer(self, n_neurons, act='sigmoid'):
@@ -252,11 +252,11 @@ class Network:
         # error = (expected - output) * derivative(nrn_act)
         for lay_ind in reversed(range(len(self.layers))):
             if (lay_ind == len(self.layers)-1): # is last hidden layer
-                diff = np.subtract(self.expected, self.get_output_scalar(), dtype=DTYPE) # Network.mult_comp_vect(self.errors[-1], self.readout_wgt, complex_conj=True)    # propagate error back from readout
-                self.errors[lay_ind] =  Network.scale_comp_num_vect(diff, Network.relu_mag_comp_deriv_vect(self.layers[lay_ind]))
+                diff = np.subtract(np.array([[(2.*exp)-1., 0.0] for exp in self.expected], dtype=DTYPE), self.get_output(), dtype=DTYPE)
+                self.errors[lay_ind] =  np.multiply(diff, Network.relu_comp_deriv_vect(self.layers[lay_ind]))
             else: # hidden layer
                 self.errors[lay_ind] = Network.matmul_comp(self.errors[lay_ind+1], Network.transpose_comp_2d(self.weights[lay_ind+1])) # errors propagate back up weights
-            self.errors[lay_ind] = np.multiply(self.errors[lay_ind], Network.relu_comp_deriv_vect(self.layers[lay_ind]), dtype=DTYPE) # self.act_deriv_funcs
+                self.errors[lay_ind] = np.multiply(self.errors[lay_ind], Network.relu_comp_deriv_vect(self.layers[lay_ind]), dtype=DTYPE) # self.act_deriv_funcs
 
     @staticmethod
     def outer_comp(vec1, vec2):
@@ -265,6 +265,12 @@ class Network:
             for i2, c2 in enumerate(vec2):
                 out_arr[i1][i2] = Network.mult_comp(c1, c2)
         return out_arr
+
+    @staticmethod
+    def complex_conj_vec(in_arr):
+        for i in range(in_arr.shape[0]):
+            in_arr[i][1] *= -1.0
+        return in_arr
 
     def update_weights(self):
         # update readout weights
@@ -360,15 +366,18 @@ class Network:
         for ex_ind in range(examples.shape[-1]):
             self.set_input(examples[..., ex_ind])
             self.forward_propagate()
-            predictions[..., ex_ind] = self.get_output_scalar()
+            out = self.get_output()
+            vec_diff = np.subtract(np.array([[1., 0.] for x in range(out.shape[0])], dtype=DTYPE), out)
+            predictions[..., ex_ind] = Network.comp_mag_vect(vec_diff)
         return predictions
 
     def evaluate(self, examples, labels):
         predictions = self.predict(examples)
         correct_count = 0
         for i in range(predictions.shape[-1]):
-            ind_max = np.argmax(predictions[..., i])
+            ind_max = np.argmin(predictions[..., i])
             ind_max_label = np.argmax(labels[..., i])
+            #print('predicted: {} true: {}'.format(ind_max, ind_max_label))
             if (ind_max == ind_max_label):
                 correct_count += 1
         return np.float64(correct_count)/np.float64(predictions.shape[-1])
