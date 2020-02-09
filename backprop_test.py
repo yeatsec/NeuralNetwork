@@ -17,6 +17,7 @@ print('creating network')
 net = Network(28*28, lrn_rate=0.05)
 net.add_layer(10, act='relu')
 #net.load(filename) # later
+#net.report(3)
 
 net.train(train_images[...,:train_subset_ind], train_labels[...,:train_subset_ind], epochs=1, batch_size=1, train_acc=200, checkpoint=True)
 
